@@ -1,8 +1,7 @@
 package com.example.notificationservice.service;
 
 import com.example.notificationservice.dto.UserDto;
-import com.example.notificationservice.entity.FailedEmailEntity;
-import com.example.notificationservice.repository.FailedEmailRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.MessagingException;
@@ -14,7 +13,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,7 +25,7 @@ import java.util.concurrent.Executors;
 public class KafkaConsumerService {
     private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerService.class);
     private final ObjectMapper objectMapper;
-    private final FailedEmailRepository failedEmailRepository;
+//    private final FailedEmailRepository failedEmailRepository;
     private static final int MAX_RETRIES = 3;
     private final ExecutorService executorService = Executors.newFixedThreadPool(5);
     @Value("${spring.mail.password}")
@@ -36,9 +34,9 @@ public class KafkaConsumerService {
     @Value("${spring.mail.username}")
     private String username;
 
-    public KafkaConsumerService(ObjectMapper objectMapper, FailedEmailRepository failedEmailRepository) {
+    public KafkaConsumerService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.failedEmailRepository = failedEmailRepository;
+//        this.failedEmailRepository = failedEmailRepository;
     }
 
     private JavaMailSender configureMailSender(String username) {
@@ -55,16 +53,16 @@ public class KafkaConsumerService {
         return mailSender;
     }
 
-    @KafkaListener(topics = "notification-topic", groupId = "notification-group", containerFactory = "batchFactory")
-    public void listen(List<String> messages) {
-        messages.forEach(message -> executorService.submit(() -> processMessage(message)));
+    @KafkaListener(topics = "notification-topic", groupId = "notification-group")
+    public void listen(String messages) throws JsonProcessingException {
+
+        List<UserDto> notifications = objectMapper.readValue(messages, new TypeReference<List<UserDto>>() {});
+        notifications.forEach(message -> executorService.submit(() -> processMessage(message)));
     }
 
-    private void processMessage(String message) {
+    private void processMessage(UserDto message) {
         try {
-            List<UserDto> userDtos = objectMapper.readValue(message, new TypeReference<>() {
-            });
-            userDtos.forEach(userDto -> executorService.submit(() -> processEmail(userDto)));
+            processEmail(message);
         } catch (Exception e) {
             logger.error("Error processing message {}", message, e);
         }
@@ -96,40 +94,40 @@ public class KafkaConsumerService {
     private void processEmail(UserDto userDto) {
         boolean success = sendEmail(userDto.getEmail(), "Notification", userDto.getMessage());
         if (!success) {
-            saveFailedEmail(userDto);
+//            saveFailedEmail(userDto);
         }
     }
 
 
-    private void saveFailedEmail(UserDto userDto) {
-        FailedEmailEntity failedEmail = new FailedEmailEntity();
-        failedEmail.setEmail(userDto.getEmail());
-        failedEmail.setSubject("Notification");
-        failedEmail.setContent(userDto.getMessage());
-        failedEmail.setRetryCount(0);
-
-        failedEmailRepository.save(failedEmail);
-        logger.info("Saved failed email to database for retry: {}", userDto.getEmail());
-    }
-
-    @Scheduled(cron = "0 * * * * ?")
-    public void retryFailedEmails() {
-        logger.info("Scheduled task is running.");
-        List<FailedEmailEntity> failedEmails = failedEmailRepository.findByRetryCountLessThan(MAX_RETRIES);
-        if (failedEmails.isEmpty()) {
-            return;
-        }
-
-        for (FailedEmailEntity failedEmail : failedEmails) {
-            boolean success = sendEmail(failedEmail.getEmail(), failedEmail.getSubject(), failedEmail.getContent());
-            if (success) {
-                failedEmailRepository.delete(failedEmail);
-            } else {
-                failedEmail.setRetryCount(failedEmail.getRetryCount() + 1);
-                failedEmailRepository.save(failedEmail);
-            }
-        }
-    }
+//    private void saveFailedEmail(UserDto userDto) {
+//        FailedEmailEntity failedEmail = new FailedEmailEntity();
+//        failedEmail.setEmail(userDto.getEmail());
+//        failedEmail.setSubject("Notification");
+//        failedEmail.setContent(userDto.getMessage());
+//        failedEmail.setRetryCount(0);
+//
+//        failedEmailRepository.save(failedEmail);
+//        logger.info("Saved failed email to database for retry: {}", userDto.getEmail());
+//    }
+//
+//    @Scheduled(cron = "0 * * * * ?")
+//    public void retryFailedEmails() {
+//        logger.info("Scheduled task is running.");
+//        List<FailedEmailEntity> failedEmails = failedEmailRepository.findByRetryCountLessThan(MAX_RETRIES);
+//        if (failedEmails.isEmpty()) {
+//            return;
+//        }
+//
+//        for (FailedEmailEntity failedEmail : failedEmails) {
+//            boolean success = sendEmail(failedEmail.getEmail(), failedEmail.getSubject(), failedEmail.getContent());
+//            if (success) {
+//                failedEmailRepository.delete(failedEmail);
+//            } else {
+//                failedEmail.setRetryCount(failedEmail.getRetryCount() + 1);
+//                failedEmailRepository.save(failedEmail);
+//            }
+//        }
+//    }
 
 }
 
