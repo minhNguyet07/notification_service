@@ -42,7 +42,7 @@ pipeline {
                             --resource-group $RESOURCE_GROUP \
                             --name $APP_NAME \
                             --src target/*.jar \
-                            --subscription <YOUR_AZURE_SUBSCRIPTION_ID> \
+                            --subscription a38e3e69-0a2d-473f-b831-51a7e6299ffa  \
                             --publish-profile $PUBLISH_PROFILE_PATH
                         '''
                     }
