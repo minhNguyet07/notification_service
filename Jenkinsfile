@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'Windows-Agent' }
 
     environment {
         PUBLISH_PROFILE = credentials('azure-publish-profile')
@@ -26,7 +26,7 @@ pipeline {
 
         stage('Build Application') {
             steps {
-                bat 'mvn clean package -DskipTests'
+                bat 'mvn clean package -DskipTests' 
             }
         }
 
@@ -40,7 +40,7 @@ pipeline {
                             --name %APP_NAME% ^
                             --src-path target/notification-service-0.0.1-SNAPSHOT.jar ^
                             --type jar ^
-                            --subscription %SUBSCRIPTION_ID% ^
+                            --subscription %SUBSCRIPTION_ID%
                         '''
                     }
                 }
