@@ -38,8 +38,8 @@ pipeline {
                         az webapp deploy ^
                             --resource-group %RESOURCE_GROUP% ^
                             --name %APP_NAME% ^
-                            --src target/notification-service-0.0.1-SNAPSHOT.jar ^
-                             --type jar ^
+                            --src-path target/notification-service-0.0.1-SNAPSHOT.jar ^
+                            --type jar ^
                             --subscription %SUBSCRIPTION_ID% ^
                         '''
                     }
