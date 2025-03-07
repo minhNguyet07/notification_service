@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        PUBLISH_PROFILE = credentials('azure-publish-profile')
         RESOURCE_GROUP = 'MyResourceGroup' 
         APP_NAME = 'my-notification-app'
+        PUBLISH_PROFILE = credentials('azure-publish-profile')
     }
 
     stages {
@@ -32,16 +32,16 @@ pipeline {
         stage('Deploy to Azure App Service') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: 'azure-publish-profile', variable: 'PUBLISH_PROFILE_PATH')]) {
-                        sh '''
-                        az webapp deployment source config-zip \
-                            --resource-group $RESOURCE_GROUP \
-                            --name $APP_NAME \
-                            --src target/*.jar \
-                            --subscription <YOUR_AZURE_SUBSCRIPTION_ID> \
-                            --publish-profile $PUBLISH_PROFILE_PATH
-                        '''
-                    }
+                    sh '''
+                    echo "$PUBLISH_PROFILE" > publish-profile.txt
+                    
+                    az webapp deployment source config-zip \
+                        --resource-group $RESOURCE_GROUP \
+                        --name $APP_NAME \
+                        --src target/*.jar \
+                        --subscription <YOUR_AZURE_SUBSCRIPTION_ID> \
+                        --publish-profile publish-profile.txt
+                    '''
                 }
             }
         }
