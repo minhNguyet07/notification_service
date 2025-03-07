@@ -5,10 +5,7 @@ pipeline {
         PUBLISH_PROFILE = credentials('azure-publish-profile')
         RESOURCE_GROUP = 'MyResourceGroup' 
         APP_NAME = 'my-notification-app'
-    }
-
-    tools {
-        maven 'mvn'  // Sử dụng Maven đã cấu hình trong Jenkins
+        SUBSCRIPTION_ID = 'a38e3e69-0a2d-473f-b831-51a7e6299ffa'
     }
 
     stages {
@@ -29,7 +26,7 @@ pipeline {
 
         stage('Build Application') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                bat 'mvn clean package -DskipTests'
             }
         }
 
@@ -37,13 +34,13 @@ pipeline {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'azure-publish-profile', variable: 'PUBLISH_PROFILE_PATH')]) {
-                        sh '''
-                        az webapp deployment source config-zip \
-                            --resource-group $RESOURCE_GROUP \
-                            --name $APP_NAME \
-                            --src target/*.jar \
-                            --subscription a38e3e69-0a2d-473f-b831-51a7e6299ffa  \
-                            --publish-profile $PUBLISH_PROFILE_PATH
+                        bat '''
+                        az webapp deployment source config-zip ^
+                            --resource-group %RESOURCE_GROUP% ^
+                            --name %APP_NAME% ^
+                            --src target/notification-service-0.0.1-SNAPSHOT.jar ^
+                            --subscription %SUBSCRIPTION_ID% ^
+                            --publish-profile %PUBLISH_PROFILE_PATH%
                         '''
                     }
                 }
