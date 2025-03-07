@@ -35,12 +35,12 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'azure-publish-profile', variable: 'PUBLISH_PROFILE_PATH')]) {
                         bat '''
-                        az webapp deployment source config-zip ^
+                        az webapp deploy ^
                             --resource-group %RESOURCE_GROUP% ^
                             --name %APP_NAME% ^
                             --src target/notification-service-0.0.1-SNAPSHOT.jar ^
+                             --type jar ^
                             --subscription %SUBSCRIPTION_ID% ^
-                            --publish-profile %PUBLISH_PROFILE_PATH%
                         '''
                     }
                 }
